@@ -12,20 +12,32 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
 interface ChatApi {
-    suspend fun getCompletion(message: String): String
+    suspend fun sendChatRequest(apiKey: String, request: ChatRequest): ChatResponse
 }
 
 @Serializable
-data class ChatRequest(val model: String, val messages: List<Message>)
+data class ChatMessage(
+    val role: String,
+    val content: String
+)
 
 @Serializable
-data class Message(val role: String, val content: String)
+data class ChatRequest(
+    val model: String,
+    val messages: List<ChatMessage>
+)
 
 @Serializable
-data class ChatResponse(val choices: List<Choice>)
+data class ChatResponse(
+    val id: String? = null,
+    val choices: List<Choice>? = null
+)
 
 @Serializable
-data class Choice(val message: Message)
+data class Choice(
+    val index: Int,
+    val message: ChatMessage
+)
 
 class ChatGptApi : ChatApi {
     private val client = HttpClient {
@@ -44,29 +56,11 @@ class ChatGptApi : ChatApi {
         }
     }
 
-    override suspend fun getCompletion(message: String): String {
-        return try {
-            val response: ChatResponse = client.post("https://api.openai.com/v1/chat/completions") {
-                contentType(ContentType.Application.Json)
-                header("Authorization", "Bearer ${BuildConfig.OPENAI_API_KEY}")
-                setBody(
-                    ChatRequest(
-                        model = "gpt-3.5-turbo",
-                        messages = listOf(Message(role = "user", content = message))
-                    )
-                )
-            }.body()
-            response.choices.firstOrNull()?.message?.content ?: "Error: No response from API"
-        } catch (e: ResponseException) {
-            val statusCode = e.response.status.value
-            when (statusCode) {
-                401 -> "Error: Unauthorized. Please check your API key."
-                429 -> "Error: Rate limit exceeded. Please try again later."
-                in 500..599 -> "Error: Server failed with status $statusCode."
-                else -> "Error: Request failed with status $statusCode."
-            }
-        } catch (e: Exception) {
-            "Error: An unexpected error occurred: ${e.message}"
-        }
+    override suspend fun sendChatRequest(apiKey: String, request: ChatRequest): ChatResponse {
+        return client.post("https://llm.api.cloud.yandex.net/v1/chat/completions") {
+            header(HttpHeaders.Authorization, "Bearer $apiKey")
+            contentType(ContentType.Application.Json)
+            setBody(request)
+        }.body()
     }
 }
