@@ -1,7 +1,8 @@
 package me.kabachel.aichallenge
 
 import io.ktor.client.* 
-import io.ktor.client.call.* 
+import io.ktor.client.call.*
+import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.ResponseException
 import io.ktor.client.plugins.contentnegotiation.* 
 import io.ktor.client.plugins.logging.* 
@@ -45,6 +46,11 @@ class ChatGptApi : ChatApi {
             json(Json {
                 ignoreUnknownKeys = true
             })
+        }
+        install(HttpTimeout) {
+            requestTimeoutMillis = 30_000
+            connectTimeoutMillis = 30_000
+            socketTimeoutMillis = 30_000
         }
         install(Logging) {
             level = LogLevel.ALL
