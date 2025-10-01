@@ -1,12 +1,13 @@
 package me.kabachel.aichallenge
 
-import io.ktor.client.*
-import io.ktor.client.call.*
-import io.ktor.client.plugins.contentnegotiation.*
-import io.ktor.client.request.*
-import io.ktor.http.*
-import io.ktor.serialization.kotlinx.json.*
-import kotlinx.serialization.Serializable
+import io.ktor.client.* 
+import io.ktor.client.call.* 
+import io.ktor.client.plugins.contentnegotiation.* 
+import io.ktor.client.plugins.logging.* 
+import io.ktor.client.request.* 
+import io.ktor.http.* 
+import io.ktor.serialization.kotlinx.json.* 
+import kotlinx.serialization.Serializable 
 import kotlinx.serialization.json.Json
 
 interface ChatApi {
@@ -31,6 +32,10 @@ class ChatGptApi : ChatApi {
             json(Json {
                 ignoreUnknownKeys = true
             })
+        }
+        install(Logging) {
+            level = LogLevel.ALL
+            logger = Logger.DEFAULT
         }
     }
 
