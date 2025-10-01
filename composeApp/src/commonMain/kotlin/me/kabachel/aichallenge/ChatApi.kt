@@ -38,7 +38,7 @@ class ChatGptApi : ChatApi {
         try {
             val response: ChatResponse = client.post("https://api.openai.com/v1/chat/completions") {
                 contentType(ContentType.Application.Json)
-                header("Authorization", "Bearer YOUR_API_KEY") // TODO: Replace with your API key
+                header("Authorization", "Bearer ${BuildConfig.OPENAI_API_KEY}")
                 setBody(
                     ChatRequest(
                         model = "gpt-3.5-turbo",
