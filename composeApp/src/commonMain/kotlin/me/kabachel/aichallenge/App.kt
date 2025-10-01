@@ -1,12 +1,14 @@
 package me.kabachel.aichallenge
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeContentPadding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
@@ -57,25 +59,27 @@ fun App() {
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.background)
+                    .background(MaterialTheme.colorScheme.background),
+                reverseLayout = true
             ) {
-                items(chatMessages) { message ->
+                items(chatMessages.asReversed()) { message ->
                     val isUser = message.role == "user"
-                    Column(
+                    Row(
                         modifier = Modifier
-                            .fillMaxWidth(),
-                        horizontalAlignment = if (isUser) Alignment.End else Alignment.Start
+                            .fillMaxWidth()
+                            .padding(6.dp),
+                        horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start
                     ) {
                         Text(
                             text = message.content,
                             modifier = Modifier
                                 .background(
-                                    if (isUser) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary,
-                                    shape = MaterialTheme.shapes.medium
+                                    if (isUser) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+                                    shape = MaterialTheme.shapes.large
                                 )
-                                .padding(12.dp)
-                                .fillMaxWidth(0.8f),
-                            color = if (isUser) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSecondary
+                                .padding(horizontal = 14.dp, vertical = 10.dp)
+                                .widthIn(max = 280.dp),
+                            color = if (isUser) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
                         )
                     }
                 }
@@ -101,6 +105,7 @@ fun App() {
                                 coroutineScope.launch {
                                     val userMessage = ChatMessage("user", userInput)
                                     chatMessages.add(userMessage)
+                                    userInput = ""
                                     val request = ChatRequest(
                                         model = "gpt://b1gppgv3fk1p5vm1kq4f/qwen3-235b-a22b-fp8/latest",
                                         messages = listOf(
@@ -114,7 +119,6 @@ fun App() {
                                     ).choices?.firstOrNull()?.message?.content.orEmpty()
                                     val botMessage = ChatMessage("assistant", responseContent)
                                     chatMessages.add(botMessage)
-                                    userInput = ""
                                 }
                                 true
                             } else {
