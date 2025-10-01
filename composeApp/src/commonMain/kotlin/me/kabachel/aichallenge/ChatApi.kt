@@ -2,6 +2,7 @@ package me.kabachel.aichallenge
 
 import io.ktor.client.* 
 import io.ktor.client.call.* 
+import io.ktor.client.plugins.ResponseException
 import io.ktor.client.plugins.contentnegotiation.* 
 import io.ktor.client.plugins.logging.* 
 import io.ktor.client.request.* 
@@ -35,12 +36,16 @@ class ChatGptApi : ChatApi {
         }
         install(Logging) {
             level = LogLevel.ALL
-            logger = Logger.DEFAULT
+            logger = object : Logger {
+                override fun log(message: String) {
+                    println(message)
+                }
+            }
         }
     }
 
     override suspend fun getCompletion(message: String): String {
-        try {
+        return try {
             val response: ChatResponse = client.post("https://api.openai.com/v1/chat/completions") {
                 contentType(ContentType.Application.Json)
                 header("Authorization", "Bearer ${BuildConfig.OPENAI_API_KEY}")
@@ -51,9 +56,17 @@ class ChatGptApi : ChatApi {
                     )
                 )
             }.body()
-            return response.choices.first().message.content
+            response.choices.firstOrNull()?.message?.content ?: "Error: No response from API"
+        } catch (e: ResponseException) {
+            val statusCode = e.response.status.value
+            when (statusCode) {
+                401 -> "Error: Unauthorized. Please check your API key."
+                429 -> "Error: Rate limit exceeded. Please try again later."
+                in 500..599 -> "Error: Server failed with status $statusCode."
+                else -> "Error: Request failed with status $statusCode."
+            }
         } catch (e: Exception) {
-            return "Error: ${e.message}"
+            "Error: An unexpected error occurred: ${e.message}"
         }
     }
 }
