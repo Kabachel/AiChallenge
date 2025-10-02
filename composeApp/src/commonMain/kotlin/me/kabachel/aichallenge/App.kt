@@ -1,59 +1,64 @@
 package me.kabachel.aichallenge
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeContentPadding
-import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import kotlinx.coroutines.launch
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
+import kotlin.math.roundToInt
 import org.jetbrains.compose.ui.tooling.preview.Preview
+import kotlin.time.ExperimentalTime
+import kotlin.time.Instant
+
+@OptIn(ExperimentalTime::class)
+fun formatTimestamp(ts: String?): String {
+    if (ts.isNullOrBlank()) return ""
+    return try {
+        val dt = Instant.parse(ts).toLocalDateTime(TimeZone.currentSystemDefault())
+        "${dt.hour.toString().padStart(2, '0')}:${dt.minute.toString().padStart(2, '0')}"
+    } catch (_: Exception) { "" }
+}
+
+fun formatConfidence(c: Double?): String {
+    if (c == null) return ""
+    val v = (c * 100.0).roundToInt() / 100.0
+    return v.toString()
+}
 
 @Composable
 @Preview
 fun App() {
     MaterialTheme {
-        val chatApi: ChatApi = remember { ChatGptApi() }
-        val viewModel: ChatViewModel = viewModel()
+        val chatApi = remember { ChatGptApi() }
+        val viewModel = viewModel { ChatViewModel(chatApi, BuildConfig.OPENAI_API_KEY) }
         val chatMessages = viewModel.chatMessages
-        val coroutineScope = rememberCoroutineScope()
         var userInput by remember { mutableStateOf("") }
-        val focusRequester = remember { androidx.compose.ui.focus.FocusRequester() }
+        val focusRequester = remember { FocusRequester() }
 
-        androidx.compose.runtime.LaunchedEffect(Unit) {
-            focusRequester.requestFocus()
-        }
+        LaunchedEffect(Unit) { focusRequester.requestFocus() }
 
         Column(
             modifier = Modifier
                 .background(MaterialTheme.colorScheme.primaryContainer)
                 .safeContentPadding()
                 .fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             LazyColumn(
                 modifier = Modifier
@@ -70,17 +75,53 @@ fun App() {
                             .padding(6.dp),
                         horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start
                     ) {
-                        Text(
-                            text = message.content,
+                        Column(
                             modifier = Modifier
                                 .background(
-                                    if (isUser) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+                                    if (isUser) MaterialTheme.colorScheme.primary
+                                    else MaterialTheme.colorScheme.surfaceVariant,
                                     shape = MaterialTheme.shapes.large
                                 )
-                                .padding(horizontal = 14.dp, vertical = 10.dp)
-                                .widthIn(max = 280.dp),
-                            color = if (isUser) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
-                        )
+                                .padding(12.dp)
+                                .widthIn(max = 280.dp)
+                        ) {
+                            message.type?.let {
+                                Text(
+                                    text = it,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (isUser) MaterialTheme.colorScheme.onPrimary
+                                    else MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                            Text(
+                                text = message.content,
+                                color = if (isUser) MaterialTheme.colorScheme.onPrimary
+                                else MaterialTheme.colorScheme.onSurface
+                            )
+                            Row(Modifier.fillMaxWidth()) {
+                                Text(
+                                    text = message.language ?: "",
+                                    style = MaterialTheme.typography.labelSmall.copy(fontStyle = FontStyle.Italic),
+                                    color = if (isUser) MaterialTheme.colorScheme.onPrimary
+                                    else MaterialTheme.colorScheme.onSurface
+                                )
+                                Spacer(Modifier.weight(1f))
+                                Text(
+                                    text = formatTimestamp(message.timestamp),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = if (isUser) MaterialTheme.colorScheme.onPrimary
+                                    else MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                            message.confidence?.let {
+                                Text(
+                                    text = "Уверенность в ответе: ${formatConfidence(it)}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = if (isUser) MaterialTheme.colorScheme.onPrimary
+                                    else MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -99,50 +140,20 @@ fun App() {
                         .weight(1f)
                         .focusRequester(focusRequester)
                         .onPreviewKeyEvent { keyEvent ->
-                            if (keyEvent.type == androidx.compose.ui.input.key.KeyEventType.KeyUp &&
-                                keyEvent.key == androidx.compose.ui.input.key.Key.Enter
-                            ) {
-                                coroutineScope.launch {
-                                    val userMessage = ChatMessage("user", userInput)
-                                    chatMessages.add(userMessage)
+                            if (keyEvent.type == KeyEventType.KeyUp && keyEvent.key == Key.Enter) {
+                                val text = userInput
+                                if (text.isNotBlank()) {
+                                    viewModel.sendMessage(text)
                                     userInput = ""
-                                    val request = ChatRequest(
-                                        model = "gpt://b1gppgv3fk1p5vm1kq4f/qwen3-235b-a22b-fp8/latest",
-                                        messages = listOf(
-                                            ChatMessage("system", ""),
-                                            userMessage
-                                        )
-                                    )
-                                    val responseContent = chatApi.sendChatRequest(
-                                        BuildConfig.OPENAI_API_KEY,
-                                        request
-                                    ).choices?.firstOrNull()?.message?.content.orEmpty()
-                                    val botMessage = ChatMessage("assistant", responseContent)
-                                    chatMessages.add(botMessage)
                                 }
                                 true
-                            } else {
-                                false
-                            }
+                            } else false
                         }
                 )
                 Button(onClick = {
-                    coroutineScope.launch {
-                        val userMessage = ChatMessage("user", userInput)
-                        chatMessages.add(userMessage)
-                        val request = ChatRequest(
-                            model = "gpt://b1gppgv3fk1p5vm1kq4f/qwen3-235b-a22b-fp8/latest",
-                            messages = listOf(
-                                ChatMessage("system", ""),
-                                userMessage
-                            )
-                        )
-                        val responseContent = chatApi.sendChatRequest(
-                            BuildConfig.OPENAI_API_KEY,
-                            request
-                        ).choices?.firstOrNull()?.message?.content.orEmpty()
-                        val botMessage = ChatMessage("assistant", responseContent)
-                        chatMessages.add(botMessage)
+                    val text = userInput
+                    if (text.isNotBlank()) {
+                        viewModel.sendMessage(text)
                         userInput = ""
                     }
                 }) {
