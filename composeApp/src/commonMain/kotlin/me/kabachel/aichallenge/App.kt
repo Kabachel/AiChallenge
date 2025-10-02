@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -93,11 +94,13 @@ fun App() {
                                     else MaterialTheme.colorScheme.onSurface
                                 )
                             }
-                            Text(
-                                text = message.content,
-                                color = if (isUser) MaterialTheme.colorScheme.onPrimary
-                                else MaterialTheme.colorScheme.onSurface
-                            )
+                            SelectionContainer {
+                                Text(
+                                    text = message.content,
+                                    color = if (isUser) MaterialTheme.colorScheme.onPrimary
+                                    else MaterialTheme.colorScheme.onSurface
+                                )
+                            }
                             Row(Modifier.fillMaxWidth()) {
                                 Text(
                                     text = message.language ?: "",
