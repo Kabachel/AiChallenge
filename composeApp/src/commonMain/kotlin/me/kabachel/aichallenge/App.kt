@@ -27,15 +27,6 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 
-@OptIn(ExperimentalTime::class)
-fun formatTimestamp(ts: String?): String {
-    if (ts.isNullOrBlank()) return ""
-    return try {
-        val dt = Instant.parse(ts).toLocalDateTime(TimeZone.currentSystemDefault())
-        "${dt.hour.toString().padStart(2, '0')}:${dt.minute.toString().padStart(2, '0')}"
-    } catch (_: Exception) { "" }
-}
-
 fun formatConfidence(c: Double?): String {
     if (c == null) return ""
     val v = (c * 100.0).roundToInt() / 100.0
@@ -110,7 +101,7 @@ fun App() {
                                 )
                                 Spacer(Modifier.weight(1f))
                                 Text(
-                                    text = formatTimestamp(message.timestamp),
+                                    text = message.timestamp ?: "",
                                     style = MaterialTheme.typography.labelSmall,
                                     color = if (isUser) MaterialTheme.colorScheme.onPrimary
                                     else MaterialTheme.colorScheme.onSurface

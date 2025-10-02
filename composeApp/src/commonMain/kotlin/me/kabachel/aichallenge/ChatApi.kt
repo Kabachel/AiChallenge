@@ -83,7 +83,6 @@ class ChatGptApi : ChatApi {
                           "type": "String",        // тема разговора (например: chat, feedback, question, travel, code)
                           "content": "String",     // основной текст ответа
                           "language": "String",    // язык ответа
-                          "timestamp": "String",   // ISO8601 время генерации
                           "confidence": Number     // от 0 до 1 уверенность
                         }
                         Не используй текст вне JSON. Всегда пиши только один JSON-объект.
