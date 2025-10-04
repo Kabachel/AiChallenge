@@ -126,6 +126,15 @@ fun App() {
                     .background(MaterialTheme.colorScheme.surface),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                Button(
+                    onClick = {
+                        // Сбросить историю чата (начать новый чат)
+                        viewModel.chatMessages.clear()
+                    },
+                    modifier = Modifier.padding(horizontal = 8.dp)
+                ) {
+                    Text("Новый чат")
+                }
                 TextField(
                     value = userInput,
                     onValueChange = { userInput = it },
