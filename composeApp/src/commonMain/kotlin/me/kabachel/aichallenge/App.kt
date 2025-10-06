@@ -33,6 +33,7 @@ fun formatConfidence(c: Double?): String {
     return v.toString()
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 @Preview
 fun App() {
@@ -42,6 +43,8 @@ fun App() {
         val chatMessages = viewModel.chatMessages
         var userInput by remember { mutableStateOf("") }
         val focusRequester = remember { FocusRequester() }
+        val temperatureOptions = listOf(0.0, 0.7, 1.2)
+        var selectedTemperatureIndex by remember { mutableStateOf(1) } // Default to 0.7
 
         LaunchedEffect(Unit) { focusRequester.requestFocus() }
 
@@ -116,6 +119,21 @@ fun App() {
                                 )
                             }
                         }
+                    }
+                }
+            }
+            
+            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+                temperatureOptions.forEachIndexed { index, temp ->
+                    SegmentedButton(
+                        shape = SegmentedButtonDefaults.itemShape(index = index, count = temperatureOptions.size),
+                        onClick = { 
+                            selectedTemperatureIndex = index
+                            viewModel.temperature = temp
+                        },
+                        selected = index == selectedTemperatureIndex
+                    ) {
+                        Text(temp.toString())
                     }
                 }
             }

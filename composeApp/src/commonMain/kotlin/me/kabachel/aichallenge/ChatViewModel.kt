@@ -3,6 +3,9 @@ package me.kabachel.aichallenge
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -26,6 +29,7 @@ class ChatViewModel(
 ) : ViewModel() {
 
     val chatMessages = mutableStateListOf<ChatUiMessage>()
+    var temperature by mutableStateOf(0.7) // Default temperature
 
     private var interviewActive = false
 
@@ -73,7 +77,8 @@ class ChatViewModel(
                     add(ChatMessage("system", systemPrompt))
                     chatMessages.forEach { add(ChatMessage(it.role, it.content)) }
                     add(ChatMessage("user", userInput))
-                }
+                },
+                temperature = temperature
             )
             val response = api.sendChatRequest(apiKey, request)
             val assistantText = response.choices?.firstOrNull()?.message?.content.orEmpty()
