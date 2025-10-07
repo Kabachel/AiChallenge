@@ -28,8 +28,15 @@ class ChatViewModel(
     private val apiKey: String
 ) : ViewModel() {
 
+    val models = mapOf(
+        "Qwen3 235B A22B Instruct 2507 FP8" to "gpt://b1gppgv3fk1p5vm1kq4f/qwen3-235b-a22b-fp8/latest",
+        "GPT OSS 120B" to "gpt://b1gppgv3fk1p5vm1kq4f/gpt-oss-120b/latest",
+        "YandexGPT 5.1 Pro" to "gpt://b1gppgv3fk1p5vm1kq4f/yandexgpt/rc"
+    )
+
     val chatMessages = mutableStateListOf<ChatUiMessage>()
-    var temperature by mutableStateOf(0.5) // Default temperature
+    var temperature by mutableStateOf(0.7)
+    var selectedModel by mutableStateOf(models.values.first())
 
     private var interviewActive = false
 
@@ -47,7 +54,7 @@ class ChatViewModel(
 
         viewModelScope.launch {
             val request = ChatRequest(
-                model = "gpt://b1gppgv3fk1p5vm1kq4f/gpt-oss-120b/latest",
+                model = selectedModel,
                 messages = buildList {
                     val systemPrompt = buildString {
                         appendLine("Ты — интеллектуальный ассистент, который может вести разные типы диалогов.")
