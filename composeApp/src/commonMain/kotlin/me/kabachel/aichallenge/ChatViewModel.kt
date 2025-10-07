@@ -29,7 +29,7 @@ class ChatViewModel(
 ) : ViewModel() {
 
     val chatMessages = mutableStateListOf<ChatUiMessage>()
-    var temperature by mutableStateOf(0.7) // Default temperature
+    var temperature by mutableStateOf(0.5) // Default temperature
 
     private var interviewActive = false
 
@@ -47,7 +47,7 @@ class ChatViewModel(
 
         viewModelScope.launch {
             val request = ChatRequest(
-                model = "gpt://b1gppgv3fk1p5vm1kq4f/qwen3-235b-a22b-fp8/latest",
+                model = "gpt://b1gppgv3fk1p5vm1kq4f/gpt-oss-120b/latest",
                 messages = buildList {
                     val systemPrompt = buildString {
                         appendLine("Ты — интеллектуальный ассистент, который может вести разные типы диалогов.")

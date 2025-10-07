@@ -43,8 +43,8 @@ fun App() {
         val chatMessages = viewModel.chatMessages
         var userInput by remember { mutableStateOf("") }
         val focusRequester = remember { FocusRequester() }
-        val temperatureOptions = listOf(0.0, 0.7, 1.2)
-        var selectedTemperatureIndex by remember { mutableStateOf(1) } // Default to 0.7
+        val temperatureOptions = listOf(0.0, 0.5, 1.0)
+        var selectedTemperatureIndex by remember { mutableStateOf(1) } // Default to 0.5
 
         LaunchedEffect(Unit) { focusRequester.requestFocus() }
 
