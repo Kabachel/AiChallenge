@@ -43,8 +43,6 @@ fun App() {
         val chatMessages = viewModel.chatMessages
         var userInput by remember { mutableStateOf("") }
         val focusRequester = remember { FocusRequester() }
-        val temperatureOptions = listOf(0.0, 0.7, 1.2)
-        var selectedTemperatureIndex by remember { mutableStateOf(1) } // Default to 0.7
         var modelMenuExpanded by remember { mutableStateOf(false) }
 
         LaunchedEffect(Unit) { focusRequester.requestFocus() }
@@ -123,17 +121,19 @@ fun App() {
                     }
                 }
             }
-            
-            Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 SingleChoiceSegmentedButtonRow(modifier = Modifier.weight(1f)) {
-                    temperatureOptions.forEachIndexed { index, temp ->
+                    viewModel.selectedModel.temperatures.forEachIndexed { index, temp ->
                         SegmentedButton(
-                            shape = SegmentedButtonDefaults.itemShape(index = index, count = temperatureOptions.size),
+                            shape = SegmentedButtonDefaults.itemShape(index = index, count = viewModel.selectedModel.temperatures.size),
                             onClick = { 
-                                selectedTemperatureIndex = index
                                 viewModel.temperature = temp
                             },
-                            selected = index == selectedTemperatureIndex
+                            selected = temp == viewModel.temperature
                         ) {
                             Text(temp.toString())
                         }
@@ -141,12 +141,12 @@ fun App() {
                 }
                 Box {
                     Button(onClick = { modelMenuExpanded = true }) {
-                        Text(viewModel.models.entries.find { it.value == viewModel.selectedModel }?.key ?: "Select Model")
+                        Text(viewModel.selectedModel.name)
                     }
                     DropdownMenu(expanded = modelMenuExpanded, onDismissRequest = { modelMenuExpanded = false }) {
-                        viewModel.models.forEach { (name, model) ->
-                            DropdownMenuItem(text = { Text(name) }, onClick = {
-                                viewModel.selectedModel = model
+                        viewModel.models.forEach { model ->
+                            DropdownMenuItem(text = { Text(model.name) }, onClick = {
+                                viewModel.selectModel(model)
                                 modelMenuExpanded = false
                             })
                         }

@@ -28,17 +28,34 @@ class ChatViewModel(
     private val apiKey: String
 ) : ViewModel() {
 
-    val models = mapOf(
-        "Qwen3 235B A22B Instruct 2507 FP8" to "gpt://b1gppgv3fk1p5vm1kq4f/qwen3-235b-a22b-fp8/latest",
-        "GPT OSS 120B" to "gpt://b1gppgv3fk1p5vm1kq4f/gpt-oss-120b/latest",
-        "YandexGPT 5.1 Pro" to "gpt://b1gppgv3fk1p5vm1kq4f/yandexgpt/rc"
+    val models = listOf(
+        AiModel(
+            name = "Qwen3 235B A22B Instruct 2507 FP8",
+            url = "gpt://b1gppgv3fk1p5vm1kq4f/qwen3-235b-a22b-fp8/latest",
+            temperatures = listOf(0.0, 0.7, 1.2)
+        ),
+        AiModel(
+            name = "GPT OSS 120B",
+            url = "gpt://b1gppgv3fk1p5vm1kq4f/gpt-oss-120b/latest",
+            temperatures = listOf(0.0, 0.7, 1.2)
+        ),
+        AiModel(
+            name = "YandexGPT 5 Lite",
+            url = "gpt://b1gppgv3fk1p5vm1kq4f/yandexgpt-lite/latest",
+            temperatures = listOf(0.0, 0.5, 1.0)
+        )
     )
 
     val chatMessages = mutableStateListOf<ChatUiMessage>()
-    var temperature by mutableStateOf(0.7)
-    var selectedModel by mutableStateOf(models.values.first())
+    var selectedModel by mutableStateOf(models.first())
+    var temperature by mutableStateOf(selectedModel.temperatures[1]) // Default to the middle temperature
 
     private var interviewActive = false
+
+    fun selectModel(model: AiModel) {
+        selectedModel = model
+        temperature = model.temperatures[1] // Reset to middle temperature on model change
+    }
 
     @OptIn(ExperimentalTime::class)
     fun sendMessage(userInput: String) {
@@ -54,7 +71,7 @@ class ChatViewModel(
 
         viewModelScope.launch {
             val request = ChatRequest(
-                model = selectedModel,
+                model = selectedModel.url,
                 messages = buildList {
                     val systemPrompt = buildString {
                         appendLine("Ты — интеллектуальный ассистент, который может вести разные типы диалогов.")
