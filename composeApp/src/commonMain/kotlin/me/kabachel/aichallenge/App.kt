@@ -117,6 +117,25 @@ fun App() {
                                     else MaterialTheme.colorScheme.onSurface
                                 )
                             }
+                            if (!isUser) {
+                                Row(modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
+                                    message.responseTime?.let {
+                                        Text(
+                                            text = "Время: ${it}ms",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.weight(1f))
+                                    message.totalTokens?.let {
+                                        Text(
+                                            text = "Токены: $it",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
                 }

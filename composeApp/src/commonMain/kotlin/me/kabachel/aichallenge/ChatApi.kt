@@ -1,14 +1,15 @@
 package me.kabachel.aichallenge
 
-import io.ktor.client.*
-import io.ktor.client.call.*
-import io.ktor.client.plugins.HttpTimeout
-import io.ktor.client.plugins.contentnegotiation.*
-import io.ktor.client.plugins.logging.*
-import io.ktor.client.request.*
-import io.ktor.http.*
-import io.ktor.serialization.kotlinx.json.*
-import kotlinx.serialization.Serializable
+import io.ktor.client.* 
+import io.ktor.client.call.* 
+import io.ktor.client.plugins.HttpTimeout 
+import io.ktor.client.plugins.contentnegotiation.* 
+import io.ktor.client.plugins.logging.* 
+import io.ktor.client.request.* 
+import io.ktor.http.* 
+import io.ktor.serialization.kotlinx.json.* 
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable 
 import kotlinx.serialization.json.Json
 
 interface ChatApi {
@@ -29,9 +30,15 @@ data class ChatRequest(
 )
 
 @Serializable
+data class Usage(
+    @SerialName("total_tokens") val totalTokens: Int
+)
+
+@Serializable
 data class ChatResponse(
     val id: String? = null,
     val choices: List<Choice>? = null,
+    val usage: Usage? = null,
     val type: String? = null,
     val content: String? = null,
     val language: String? = null,

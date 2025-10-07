@@ -13,6 +13,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.decodeFromString
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
+import kotlin.time.measureTime
 
 data class ChatUiMessage(
     val role: String,
@@ -20,7 +21,9 @@ data class ChatUiMessage(
     val content: String,
     val language: String? = null,
     val timestamp: String? = null,
-    val confidence: Double? = null
+    val confidence: Double? = null,
+    val responseTime: Long? = null,
+    val totalTokens: Int? = null
 )
 
 class ChatViewModel(
@@ -40,8 +43,8 @@ class ChatViewModel(
             temperatures = listOf(0.0, 0.7, 1.2)
         ),
         AiModel(
-            name = "YandexGPT 5 Lite",
-            url = "gpt://b1gppgv3fk1p5vm1kq4f/yandexgpt-lite/latest",
+            name = "YandexGPT 5.1 Pro",
+            url = "gpt://b1gppgv3fk1p5vm1kq4f/yandexgpt/rc",
             temperatures = listOf(0.0, 0.5, 1.0)
         )
     )
@@ -104,8 +107,13 @@ class ChatViewModel(
                 },
                 temperature = temperature
             )
-            val response = api.sendChatRequest(apiKey, request)
-            val assistantText = response.choices?.firstOrNull()?.message?.content.orEmpty()
+            
+            var response: ChatResponse? = null
+            val responseTime = measureTime {
+                response = api.sendChatRequest(apiKey, request)
+            }.inWholeMilliseconds
+
+            val assistantText = response?.choices?.firstOrNull()?.message?.content.orEmpty()
             val now = Clock.System.now()
             val local = now.toLocalDateTime(TimeZone.currentSystemDefault())
             val formattedTimestamp = "${local.hour.toString().padStart(2, '0')}:${local.minute.toString().padStart(2, '0')}"
@@ -120,11 +128,19 @@ class ChatViewModel(
                         content = payload.content,
                         language = payload.language,
                         timestamp = formattedTimestamp,
-                        confidence = payload.confidence
+                        confidence = payload.confidence,
+                        responseTime = responseTime,
+                        totalTokens = response?.usage?.totalTokens
                     )
                 )
             } catch (_: Exception) {
-                chatMessages.add(ChatUiMessage("assistant", type = "assistant", content = assistantText))
+                chatMessages.add(ChatUiMessage(
+                    role = "assistant", 
+                    type = "assistant", 
+                    content = assistantText,
+                    responseTime = responseTime,
+                    totalTokens = response?.usage?.totalTokens
+                ))
             }
         }
     }
