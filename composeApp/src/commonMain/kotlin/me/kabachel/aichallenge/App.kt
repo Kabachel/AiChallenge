@@ -172,6 +172,15 @@ fun App() {
                     }
                 }
             }
+            
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 16.dp)) {
+                Text("Chain of Thought")
+                Spacer(modifier = Modifier.width(8.dp))
+                Switch(
+                    checked = viewModel.chainOfThoughtEnabled,
+                    onCheckedChange = { viewModel.chainOfThoughtEnabled = it }
+                )
+            }
 
             Row(
                 modifier = Modifier
