@@ -61,6 +61,13 @@ data class AgentPayload(
     val confidence: Double? = null
 )
 
+@Serializable
+data class StoryPlan(
+    val type: String,
+    val title: String,
+    @SerialName("plot_points") val plotPoints: List<String>
+)
+
 class ChatGptApi : ChatApi {
     private val client = HttpClient {
         install(ContentNegotiation) {

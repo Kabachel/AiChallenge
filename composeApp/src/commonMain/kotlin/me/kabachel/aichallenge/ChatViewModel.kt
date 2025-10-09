@@ -68,58 +68,123 @@ class ChatViewModel(
         if (userInput.isBlank()) return
         chatMessages.add(ChatUiMessage(role = "user", type = "user", content = userInput))
 
-        val normalizedInput = userInput.lowercase()
-        if (listOf("да", "готов", "поехали", "начинай").any { it == normalizedInput }) {
-            interviewActive = true
-        } else if (listOf("останови", "заверши", "прекрати", "хватит").any { normalizedInput.contains(it) }) {
-            interviewActive = false
-        }
-
         viewModelScope.launch {
-            val systemPrompt = promptBuilder.buildSystemPrompt(chainOfThoughtEnabled, interviewActive)
-            val request = ChatRequest(
-                model = selectedModel.url,
-                messages = buildList {
-                    add(ChatMessage("system", systemPrompt))
-                    chatMessages.forEach { add(ChatMessage(it.role, it.content)) }
-                    add(ChatMessage("user", userInput))
-                },
-                temperature = temperature
-            )
-            
-            var response: ChatResponse? = null
-            val responseTime = measureTime {
-                response = api.sendChatRequest(apiKey, request)
-            }.inWholeMilliseconds
+            // Story generation flow
+            if (userInput.lowercase().startsWith("напиши рассказ о")) {
+                // Agent 1: Planner
+                chatMessages.add(ChatUiMessage(role = "assistant", type = "system", content = "Придумываю план для рассказа..."))
 
-            val assistantText = response?.choices?.firstOrNull()?.message?.content.orEmpty()
-            val now = Clock.System.now()
-            val local = now.toLocalDateTime(TimeZone.currentSystemDefault())
-            val formattedTimestamp = "${local.hour.toString().padStart(2, '0')}:${local.minute.toString().padStart(2, '0')}"
+                val plannerRequest = ChatRequest(
+                    model = selectedModel.url,
+                    messages = listOf(
+                        ChatMessage("system", promptBuilder.buildPlannerPrompt()),
+                        ChatMessage("user", userInput)
+                    ),
+                    temperature = temperature
+                )
 
-            try {
-                val payload = Json { ignoreUnknownKeys = true }
-                    .decodeFromString<AgentPayload>(assistantText)
-                chatMessages.add(
-                    ChatUiMessage(
+                val plannerResponse = api.sendChatRequest(apiKey, plannerRequest)
+                val planJson = plannerResponse.choices?.firstOrNull()?.message?.content.orEmpty()
+
+                try {
+                    val storyPlan = Json { ignoreUnknownKeys = true }.decodeFromString<StoryPlan>(planJson)
+
+                    chatMessages.add(
+                        ChatUiMessage(
+                            role = "assistant",
+                            type = "story_plan",
+                            content = "План: ${storyPlan.title}\n" + storyPlan.plotPoints.joinToString("\n") { "- $it" }
+                        )
+                    )
+
+                    // Agent 2: Writer
+                    chatMessages.add(ChatUiMessage(role = "assistant", type = "system", content = "Пишу рассказ по плану..."))
+
+                    val writerRequest = ChatRequest(
+                        model = selectedModel.url,
+                        messages = listOf(
+                            ChatMessage("system", promptBuilder.buildWriterPrompt()),
+                            ChatMessage("user", planJson) // Pass the JSON plan to the writer
+                        ),
+                        temperature = temperature
+                    )
+
+                    var storyResponse: ChatResponse? = null
+                    val responseTime = measureTime {
+                        storyResponse = api.sendChatRequest(apiKey, writerRequest)
+                    }.inWholeMilliseconds
+
+                    val storyText = storyResponse?.choices?.firstOrNull()?.message?.content.orEmpty()
+                    val now = Clock.System.now()
+                    val local = now.toLocalDateTime(TimeZone.currentSystemDefault())
+                    val formattedTimestamp = "${local.hour.toString().padStart(2, '0')}:${local.minute.toString().padStart(2, '0')}"
+
+                    chatMessages.add(ChatUiMessage(
                         role = "assistant",
-                        type = payload.type,
-                        content = payload.content,
-                        language = payload.language,
+                        type = "story",
+                        content = storyText,
                         timestamp = formattedTimestamp,
-                        confidence = payload.confidence,
+                        responseTime = responseTime,
+                        totalTokens = storyResponse?.usage?.totalTokens
+                    ))
+
+                } catch (e: Exception) {
+                    chatMessages.add(ChatUiMessage(role = "assistant", type = "error", content = "Не удалось обработать план рассказа: ${e.message} \nПлан: $planJson"))
+                }
+
+            } else { // Regular chat/interview flow
+                val normalizedInput = userInput.lowercase()
+                if (listOf("да", "готов", "поехали", "начинай").any { it == normalizedInput }) {
+                    interviewActive = true
+                } else if (listOf("останови", "заверши", "прекрати", "хватит").any { normalizedInput.contains(it) }) {
+                    interviewActive = false
+                }
+
+                val systemPrompt = promptBuilder.buildSystemPrompt(chainOfThoughtEnabled, interviewActive)
+                val request = ChatRequest(
+                    model = selectedModel.url,
+                    messages = buildList {
+                        add(ChatMessage("system", systemPrompt))
+                        chatMessages.forEach { add(ChatMessage(it.role, it.content)) }
+                        add(ChatMessage("user", userInput))
+                    },
+                    temperature = temperature
+                )
+
+                var response: ChatResponse? = null
+                val responseTime = measureTime {
+                    response = api.sendChatRequest(apiKey, request)
+                }.inWholeMilliseconds
+
+                val assistantText = response?.choices?.firstOrNull()?.message?.content.orEmpty()
+                val now = Clock.System.now()
+                val local = now.toLocalDateTime(TimeZone.currentSystemDefault())
+                val formattedTimestamp = "${local.hour.toString().padStart(2, '0')}:${local.minute.toString().padStart(2, '0')}"
+
+                try {
+                    val payload = Json { ignoreUnknownKeys = true }
+                        .decodeFromString<AgentPayload>(assistantText)
+                    chatMessages.add(
+                        ChatUiMessage(
+                            role = "assistant",
+                            type = payload.type,
+                            content = payload.content,
+                            language = payload.language,
+                            timestamp = formattedTimestamp,
+                            confidence = payload.confidence,
+                            responseTime = responseTime,
+                            totalTokens = response?.usage?.totalTokens
+                        )
+                    )
+                } catch (_: Exception) {
+                    chatMessages.add(ChatUiMessage(
+                        role = "assistant",
+                        type = "assistant",
+                        content = assistantText,
                         responseTime = responseTime,
                         totalTokens = response?.usage?.totalTokens
-                    )
-                )
-            } catch (_: Exception) {
-                chatMessages.add(ChatUiMessage(
-                    role = "assistant", 
-                    type = "assistant", 
-                    content = assistantText,
-                    responseTime = responseTime,
-                    totalTokens = response?.usage?.totalTokens
-                ))
+                    ))
+                }
             }
         }
     }

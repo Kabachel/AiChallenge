@@ -1,6 +1,27 @@
 package me.kabachel.aichallenge
 
 class PromptBuilder {
+    fun buildPlannerPrompt(): String {
+        return """
+            Ты — Агент-Планировщик. Твоя задача — составить план для рассказа на основе темы, которую предоставит пользователь.
+            Результат твоей работы должен быть представлен в виде JSON-объекта.
+            JSON должен содержать следующие поля:
+            - "type": "story_plan" (тип контента)
+            - "title": "Название рассказа" (креативное название для истории)
+            - "plot_points": ["пункт 1", "пункт 2", "пункт 3", "пункт 4", "пункт 5"] (массив из 5 ключевых точек сюжета)
+
+            Не добавляй ничего кроме JSON в свой ответ.
+        """.trimIndent()
+    }
+
+    fun buildWriterPrompt(): String {
+        return """
+            Ты — Агент-Писатель. Тебе предоставят JSON с планом рассказа.
+            Твоя задача — написать полноценный, увлекательный рассказ на основе этого плана.
+            Следуй каждому пункту плана. Твой ответ должен быть только текстом самого рассказа.
+        """.trimIndent()
+    }
+    
     fun buildSystemPrompt(chainOfThought: Boolean, interviewActive: Boolean): String {
         return buildString {
             if (chainOfThought) {

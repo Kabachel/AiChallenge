@@ -197,6 +197,16 @@ fun App() {
                 ) {
                     Text("Новый чат")
                 }
+                 Button(
+                    onClick = {
+                        val text = userInput.ifBlank { "напиши рассказ о сове, которая боялась темноты" } 
+                        viewModel.sendMessage(if (text.startsWith("напиши рассказ о")) text else "напиши рассказ о $text")
+                        userInput = ""
+                    },
+                    modifier = Modifier.padding(horizontal = 8.dp)
+                ) {
+                    Text("Рассказ")
+                }
                 TextField(
                     value = userInput,
                     onValueChange = { userInput = it },
