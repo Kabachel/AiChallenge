@@ -23,7 +23,8 @@ data class ChatUiMessage(
     val timestamp: String? = null,
     val confidence: Double? = null,
     val responseTime: Long? = null,
-    val totalTokens: Int? = null
+    val totalTokens: Int? = null,
+    val modelName: String? = null
 )
 
 class ChatViewModel(
@@ -66,16 +67,19 @@ class ChatViewModel(
     @OptIn(ExperimentalTime::class)
     fun sendMessage(userInput: String) {
         if (userInput.isBlank()) return
-        chatMessages.add(ChatUiMessage(role = "user", type = "user", content = userInput))
+        chatMessages.add(ChatUiMessage(role = "user", type = "user", content = userInput, modelName = "User"))
 
         viewModelScope.launch {
             // Story generation flow
             if (userInput.lowercase().startsWith("напиши рассказ о")) {
+                val plannerModel = models.find { it.name.startsWith("Qwen3") } ?: selectedModel
+                val writerModel = models.find { it.name.startsWith("GPT OSS") } ?: selectedModel
+
                 // Agent 1: Planner
-                chatMessages.add(ChatUiMessage(role = "assistant", type = "system", content = "Придумываю план для рассказа..."))
+                chatMessages.add(ChatUiMessage(role = "assistant", type = "system", content = "Придумываю план для рассказа...", modelName = plannerModel.name))
 
                 val plannerRequest = ChatRequest(
-                    model = selectedModel.url,
+                    model = plannerModel.url,
                     messages = listOf(
                         ChatMessage("system", promptBuilder.buildPlannerPrompt()),
                         ChatMessage("user", userInput)
@@ -93,15 +97,16 @@ class ChatViewModel(
                         ChatUiMessage(
                             role = "assistant",
                             type = "story_plan",
-                            content = "План: ${storyPlan.title}\n" + storyPlan.plotPoints.joinToString("\n") { "- $it" }
+                            content = "План: ${storyPlan.title}\n" + storyPlan.plotPoints.joinToString("\n") { "- $it" },
+                            modelName = plannerModel.name
                         )
                     )
 
                     // Agent 2: Writer
-                    chatMessages.add(ChatUiMessage(role = "assistant", type = "system", content = "Пишу рассказ по плану..."))
+                    chatMessages.add(ChatUiMessage(role = "assistant", type = "system", content = "Пишу рассказ по плану...", modelName = writerModel.name))
 
                     val writerRequest = ChatRequest(
-                        model = selectedModel.url,
+                        model = writerModel.url,
                         messages = listOf(
                             ChatMessage("system", promptBuilder.buildWriterPrompt()),
                             ChatMessage("user", planJson) // Pass the JSON plan to the writer
@@ -125,11 +130,12 @@ class ChatViewModel(
                         content = storyText,
                         timestamp = formattedTimestamp,
                         responseTime = responseTime,
-                        totalTokens = storyResponse?.usage?.totalTokens
+                        totalTokens = storyResponse?.usage?.totalTokens,
+                        modelName = writerModel.name
                     ))
 
                 } catch (e: Exception) {
-                    chatMessages.add(ChatUiMessage(role = "assistant", type = "error", content = "Не удалось обработать план рассказа: ${e.message} \nПлан: $planJson"))
+                    chatMessages.add(ChatUiMessage(role = "assistant", type = "error", content = "Не удалось обработать план рассказа: ${e.message} \nПлан: $planJson", modelName = plannerModel.name))
                 }
 
             } else { // Regular chat/interview flow
@@ -173,7 +179,8 @@ class ChatViewModel(
                             timestamp = formattedTimestamp,
                             confidence = payload.confidence,
                             responseTime = responseTime,
-                            totalTokens = response?.usage?.totalTokens
+                            totalTokens = response?.usage?.totalTokens,
+                            modelName = selectedModel.name
                         )
                     )
                 } catch (_: Exception) {
@@ -182,7 +189,8 @@ class ChatViewModel(
                         type = "assistant",
                         content = assistantText,
                         responseTime = responseTime,
-                        totalTokens = response?.usage?.totalTokens
+                        totalTokens = response?.usage?.totalTokens,
+                        modelName = selectedModel.name
                     ))
                 }
             }

@@ -118,6 +118,14 @@ fun App() {
                                 )
                             }
                             if (!isUser) {
+                                message.modelName?.let { modelName ->
+                                    Text(
+                                        text = "Модель: $modelName",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                        modifier = Modifier.padding(top = 4.dp)
+                                    )
+                                }
                                 Row(modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
                                     message.responseTime?.let {
                                         Text(
