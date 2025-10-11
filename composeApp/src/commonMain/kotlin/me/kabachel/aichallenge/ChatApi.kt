@@ -71,6 +71,7 @@ data class StoryPlan(
 )
 
 class ChatGptApi : ChatApi {
+
     private val client = HttpClient {
         install(ContentNegotiation) {
             json(Json { ignoreUnknownKeys = true })
@@ -93,7 +94,7 @@ class ChatGptApi : ChatApi {
             header(HttpHeaders.Authorization, "Bearer $apiKey")
             contentType(ContentType.Application.Json)
             setBody(request)
-            parameter("max_tokens", 800)
+            parameter("max_tokens", Constants.MAX_TOKENS)
         }.body()
     }
 }

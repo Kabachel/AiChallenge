@@ -21,6 +21,14 @@ class PromptBuilder {
             Следуй каждому пункту плана. Твой ответ должен быть только текстом самого рассказа.
         """.trimIndent()
     }
+
+    fun buildSummarizerPrompt(): String {
+        return """
+            Ты — Агент-Суммаризатор. Твоя задача — сократить предоставленный текст, сохранив его основной смысл.
+            Убери все лишние детали, но сохрани ключевые моменты.
+            Твой ответ должен содержать только сокращённый текст.
+        """.trimIndent()
+    }
     
     fun buildSystemPrompt(chainOfThought: Boolean, interviewActive: Boolean): String {
         return buildString {
