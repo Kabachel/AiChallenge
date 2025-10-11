@@ -23,6 +23,8 @@ data class ChatUiMessage(
     val timestamp: String? = null,
     val confidence: Double? = null,
     val responseTime: Long? = null,
+    val promptTokens: Int? = null,
+    val completionTokens: Int? = null,
     val totalTokens: Int? = null,
     val modelName: String? = null
 )
@@ -130,6 +132,8 @@ class ChatViewModel(
                         content = storyText,
                         timestamp = formattedTimestamp,
                         responseTime = responseTime,
+                        promptTokens = storyResponse?.usage?.promptTokens,
+                        completionTokens = storyResponse?.usage?.completionTokens,
                         totalTokens = storyResponse?.usage?.totalTokens,
                         modelName = writerModel.name
                     ))
@@ -179,6 +183,8 @@ class ChatViewModel(
                             timestamp = formattedTimestamp,
                             confidence = payload.confidence,
                             responseTime = responseTime,
+                            promptTokens = response?.usage?.promptTokens,
+                            completionTokens = response?.usage?.completionTokens,
                             totalTokens = response?.usage?.totalTokens,
                             modelName = selectedModel.name
                         )
@@ -189,6 +195,8 @@ class ChatViewModel(
                         type = "assistant",
                         content = assistantText,
                         responseTime = responseTime,
+                        promptTokens = response?.usage?.promptTokens,
+                        completionTokens = response?.usage?.completionTokens,
                         totalTokens = response?.usage?.totalTokens,
                         modelName = selectedModel.name
                     ))

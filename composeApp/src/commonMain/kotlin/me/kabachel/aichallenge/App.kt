@@ -143,6 +143,23 @@ fun App() {
                                         )
                                     }
                                 }
+                                 Row(modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
+                                    message.promptTokens?.let {
+                                        Text(
+                                            text = "Промпт: $it",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.weight(1f))
+                                    message.completionTokens?.let {
+                                        Text(
+                                            text = "Ответ: $it",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
