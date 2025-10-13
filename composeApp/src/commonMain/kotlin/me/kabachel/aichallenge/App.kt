@@ -39,7 +39,8 @@ fun formatConfidence(c: Double?): String {
 fun App() {
     MaterialTheme {
         val chatApi = remember { ChatGptApi() }
-        val viewModel = viewModel { ChatViewModel(chatApi, BuildConfig.OPENAI_API_KEY) }
+        val mcpApi = remember { McpApiImpl() }
+        val viewModel = viewModel { ChatViewModel(chatApi, BuildConfig.OPENAI_API_KEY, mcpApi) }
         val chatMessages = viewModel.chatMessages
         var userInput by remember { mutableStateOf("") }
         val focusRequester = remember { FocusRequester() }
@@ -214,13 +215,16 @@ fun App() {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Button(
-                    onClick = {
-                        // Сбросить историю чата (начать новый чат)
-                        viewModel.chatMessages.clear()
-                    },
+                    onClick = { viewModel.chatMessages.clear() },
                     modifier = Modifier.padding(horizontal = 8.dp)
                 ) {
                     Text("Новый чат")
+                }
+                Button(
+                    onClick = { viewModel.fetchMcpTools() },
+                    modifier = Modifier.padding(horizontal = 8.dp)
+                ) {
+                    Text("MCP Tools")
                 }
                  Button(
                     onClick = {

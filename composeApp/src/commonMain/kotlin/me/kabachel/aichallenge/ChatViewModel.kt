@@ -31,7 +31,8 @@ data class ChatUiMessage(
 
 class ChatViewModel(
     private val api: ChatApi,
-    private val apiKey: String
+    private val apiKey: String,
+    private val mcpApi: McpApi
 ) : ViewModel() {
 
     private val promptBuilder = PromptBuilder()
@@ -67,6 +68,19 @@ class ChatViewModel(
         temperature = model.temperatures[1] // Reset to middle temperature on model change
     }
 
+    fun fetchMcpTools() {
+        viewModelScope.launch {
+            chatMessages.add(ChatUiMessage(role = "system", type = "MCP Request", content = "Запрашиваю список инструментов MCP..."))
+            val tools = mcpApi.getTools()
+            val content = if (tools.isNotEmpty()) {
+                tools.joinToString("\n") { "- ${it.name}: ${it.description}" }
+            } else {
+                "Инструменты не найдены."
+            }
+            chatMessages.add(ChatUiMessage(role = "system", type = "MCP Response", content = content))
+        }
+    }
+
     @OptIn(ExperimentalTime::class)
     fun sendMessage(userInput: String) {
         if (userInput.isBlank()) return
@@ -77,9 +91,11 @@ class ChatViewModel(
 
             // Summarization flow
             if (userInput.length > maxInputLength) {
-                chatMessages.add(ChatUiMessage(role = "assistant", type = "system", content = "Текст слишком длинный, сокращаю...", modelName = selectedModel.name))
+                val summarizerModel = models.find { it.name.startsWith("YandexGPT") } ?: models.first()
+
+                chatMessages.add(ChatUiMessage(role = "assistant", type = "system", content = "Текст слишком длинный, сокращаю...", modelName = summarizerModel.name))
                 val summarizerRequest = ChatRequest(
-                    model = selectedModel.url,
+                    model = summarizerModel.url,
                     messages = listOf(
                         ChatMessage("system", promptBuilder.buildSummarizerPrompt()),
                         ChatMessage("user", userInput)
@@ -88,7 +104,16 @@ class ChatViewModel(
                 )
                 val summarizerResponse = api.sendChatRequest(apiKey, summarizerRequest)
                 processedInput = summarizerResponse.choices?.firstOrNull()?.message?.content.orEmpty()
-                chatMessages.add(ChatUiMessage(role = "assistant", type = "summary", content = "Сокращенный текст:\n$processedInput", modelName = selectedModel.name))
+                
+                chatMessages.add(ChatUiMessage(
+                    role = "assistant", 
+                    type = "summary", 
+                    content = "Сокращенный текст:\n$processedInput", 
+                    modelName = summarizerModel.name,
+                    promptTokens = summarizerResponse.usage?.promptTokens,
+                    completionTokens = summarizerResponse.usage?.completionTokens,
+                    totalTokens = summarizerResponse.usage?.totalTokens
+                ))
             }
 
             // Story generation flow
